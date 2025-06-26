@@ -93,3 +93,65 @@ export const loginUser = async (credentials: { email: string; password: string }
         throw error;
     }
 };
+
+
+
+
+export const updateUserProfile = async (
+    userId: number, 
+    userData: {
+        nombre?: string;
+        apellido?: string;
+        documento?: number;
+        password?: string;
+    },
+    token: string
+) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/updateProfile`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(userData),
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al actualizar perfil');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error en updateUserProfile:', error);
+        throw error;
+    }
+};
+
+
+
+
+export const getUserProfile = async (userId: number, token: string) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/user/${userId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al obtener perfil');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error en getUserProfile:', error);
+        throw error;
+    }
+};

@@ -3,11 +3,13 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { loginUser } from '../../api/api';
+import { useAuth } from '../../components/auth/AuthContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email.trim()) {
@@ -29,11 +31,22 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       const response = await loginUser({ email, password });
-      router.push({
-        pathname: '/verify-screen', //reemplazar por la ruta al home
-      });
+      
+      // Verifica si hay error en la respuesta
+      if (response.error) {
+        throw new Error(response.error);
+      }
 
+      // Verifica que los datos necesarios estén presentes
+      if (!response.token || !response.user || !response.user.id) {
+        throw new Error('Datos de usuario incompletos en la respuesta');
+      }
+
+      // Llama a login con todos los parámetros requeridos
+      await login(response.user.email, response.token, response.user.id);
+      router.replace('/Home-screen');
     } catch (error) {
+      console.error('Login error:', error);
       Alert.alert('Error', error.message || 'Error al iniciar sesión');
     } finally {
       setIsLoading(false);

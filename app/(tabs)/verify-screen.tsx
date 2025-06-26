@@ -1,52 +1,61 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router'; // Añade useLocalSearchParams
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { verifyUser } from '../../api/api';
 
 export default function VerifyScreen() {
-  const { email } = useLocalSearchParams(); // Obtén el email de los parámetros
-  const [verificationCode, setVerificationCode] = useState('');
+  const { email } = useLocalSearchParams();
+  const [verificationCode, setVerificationCode] = useState(['', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleCodeChange = (text: string, index: number) => {
+    const newCode = [...verificationCode];
+    newCode[index] = text;
+    setVerificationCode(newCode);
+  };
+
   const handleVerification = async () => {
-    if (!verificationCode || verificationCode.length !== 4) {
-        Alert.alert('Error', 'Por favor ingresa un código de 4 dígitos');
-        return;
+    const fullCode = verificationCode.join('');
+    
+    if (!fullCode || fullCode.length !== 4) {
+      Alert.alert('Error', 'Por favor ingresa un código de 4 dígitos');
+      return;
     }
 
     setIsLoading(true);
     
     try {
-        // Asegúrate que el email sea string (puede venir como array en Expo Router)
-        const emailToVerify = Array.isArray(email) ? email[0] : email;
-        
-        if (!emailToVerify) {
+      const emailToVerify = Array.isArray(email) ? email[0] : email;
+      
+      if (!emailToVerify) {
         throw new Error('No se encontró el email para verificación');
-        }
+      }
 
-        console.log('Datos enviados:', { 
+      console.log('Datos enviados:', { 
         email: emailToVerify, 
-        code: verificationCode 
-        });
+        code: fullCode 
+      });
 
-        await verifyUser(emailToVerify, verificationCode);
-        
-        Alert.alert(
-        'Registro exitoso', 
-        '¡Tu cuenta ha sido verificada correctamente! Ahora puedes iniciar sesión.',
-        [{ text: 'OK', onPress: () => router.push('/Login') }]
-        );
+      await verifyUser(emailToVerify, fullCode);
+      
+      router.replace('/Login');
+      
     } catch (error) {
-        console.error('Error completo:', error);
-        Alert.alert(
+      console.error('Error completo:', error);
+      Alert.alert(
         'Error', 
         error instanceof Error ? error.message : 'Error al verificar el código'
-        );
+      );
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-    };
+  };
+
+  const handleResendCode = async () => {
+    // Aquí puedes implementar la lógica para reenviar el código
+    Alert.alert('Código reenviado', 'Se ha enviado un nuevo código a tu correo');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -54,30 +63,36 @@ export default function VerifyScreen() {
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Verificación</Text>
-            <Text style={styles.subtitle}>
-              Ingresa el código que enviamos a tu correo
-            </Text>
+            <Text style={styles.title}>Verificar Cuenta</Text>
           </View>
 
-          {/* Formulario de verificación */}
-          <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Código de verificación</Text>
-              <TextInput
-                style={styles.input}
-                value={verificationCode}
-                onChangeText={setVerificationCode}
-                placeholder="Introduce el código de 4 dígitos"
-                placeholderTextColor="#999"
-                keyboardType="numeric"
-                maxLength={4}
-              />
+          {/* Card Container */}
+          <View style={styles.cardContainer}>
+            <Text style={styles.instructionText}>
+              Introduce el código enviado al correo{'\n'}
+              {Array.isArray(email) ? email[0] : email}
+            </Text>
+
+            {/* Code Input Boxes */}
+            <View style={styles.codeInputContainer}>
+              {verificationCode.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  style={styles.codeInput}
+                  value={digit}
+                  onChangeText={(text) => handleCodeChange(text, index)}
+                  keyboardType="numeric"
+                  maxLength={1}
+                  textAlign="center"
+                />
+              ))}
             </View>
 
+            {/* Verify Button */}
             <TouchableOpacity 
               onPress={handleVerification} 
               disabled={isLoading}
+              style={styles.verifyButtonContainer}
             >
               <LinearGradient
                 colors={['#A448FF', '#DA48FF']}
@@ -89,6 +104,11 @@ export default function VerifyScreen() {
                   {isLoading ? 'Verificando...' : 'Verificar'}
                 </Text>
               </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Resend Code */}
+            <TouchableOpacity onPress={handleResendCode} style={styles.resendContainer}>
+              <Text style={styles.resendText}>Reenviar Código</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -106,51 +126,63 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flex: 1,
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 40,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 60,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 12,
   },
-  subtitle: {
+  cardContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 20,
+    padding: 32,
+    borderWidth: 2,
+    borderColor: '#A448FF',
+    alignItems: 'center',
+  },
+  instructionText: {
     fontSize: 16,
     color: '#fff',
     textAlign: 'center',
+    marginBottom: 40,
+    lineHeight: 22,
   },
-  formContainer: {
-    flex: 1,
+  codeInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 40,
+    width: '100%',
+    paddingHorizontal: 20,
   },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    color: '#fff',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  input: {
+  codeInput: {
+    width: 50,
+    height: 50,
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#D12CFF',
+    borderColor: '#A448FF',
     borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
+    fontSize: 24,
+    fontWeight: 'bold',
     color: '#fff',
+    textAlign: 'center',
+  },
+  verifyButtonContainer: {
+    width: '100%',
+    marginBottom: 24,
   },
   verifyButton: {
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    marginTop: 24,
   },
   verifyButtonText: {
     color: '#fff',
@@ -159,5 +191,13 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  resendContainer: {
+    paddingVertical: 8,
+  },
+  resendText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
