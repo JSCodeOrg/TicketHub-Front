@@ -10,6 +10,7 @@ export default function RootLayout() {
     >
       <Stack.Screen name="Login" />
       <Stack.Screen name="Register" />
+      <Stack.Screen name="verify-screen" />
     </Stack>
   );
 }

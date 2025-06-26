@@ -1,7 +1,8 @@
-import { LinearGradient } from 'expo-linear-gradient'; // ← IMPORTACIÓN FALTANTE
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { registerUser } from '../../api/api';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -9,20 +10,40 @@ export default function RegisterScreen() {
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [documento, setDocumento] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = () => {
-    console.log('Register attempt:', { email, password, nombre, apellido, documento });
+  const handleRegister = async () => {
+    if (!email || !password || !nombre || !apellido || !documento) {
+      Alert.alert('Error', 'Por favor completa todos los campos');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      await registerUser({ email, password, nombre, apellido, documento });
+
+      router.push({
+        pathname: '/verify-screen',
+        params: { email }
+      });
+
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Error al registrar usuario');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogin = () => {
     router.push('/Login');
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {/* Header */}
+
           <View style={styles.header}>
             <Text style={styles.title}>Registro</Text>
             <Text style={styles.subtitle}>
@@ -30,7 +51,6 @@ export default function RegisterScreen() {
             </Text>
           </View>
 
-          {/* Register Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nombre</Text>
@@ -91,14 +111,19 @@ export default function RegisterScreen() {
               />
             </View>
 
-            <TouchableOpacity onPress={handleRegister}>
+            <TouchableOpacity 
+              onPress={handleRegister} 
+              disabled={isLoading}
+            >
               <LinearGradient
                 colors={['#A448FF', '#DA48FF']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.registerButton}
+                style={[styles.registerButton, isLoading && styles.disabledButton]}
               >
-                <Text style={styles.registerButtonText}>Crear Cuenta</Text>
+                <Text style={styles.registerButtonText}>
+                  {isLoading ? 'Registrando...' : 'Crear Cuenta'}
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
 
@@ -185,5 +210,8 @@ const styles = StyleSheet.create({
   loginHighlight: {
     color: '#A448FF',
     fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });

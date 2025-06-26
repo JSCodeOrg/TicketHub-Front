@@ -1,24 +1,52 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { loginUser } from '../../api/api';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    console.log('Login attempt:', { email, password });
+  const handleLogin = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Por favor ingresa tu email');
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert('Error', 'Por favor ingresa tu contraseña');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Por favor ingresa un email válido');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await loginUser({ email, password });
+      router.push({
+        pathname: '/verify-screen', //reemplazar por la ruta al home
+      });
+
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Error al iniciar sesión');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRegister = () => {
-    router.push('/Register'); // o la ruta donde tengas tu pantalla de registro
+    router.push('/Register');
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Header */}
         <View style={styles.header}>
           <Image 
             source={require('@/assets/images/logo-tickethub.png')} 
@@ -31,7 +59,6 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        {/* Login Form */}
         <View style={styles.formContainer}>
           <Text style={styles.title}>Inicio de sesión</Text>
           
@@ -45,6 +72,7 @@ export default function LoginScreen() {
               placeholderTextColor="#999"
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isLoading}
             />
           </View>
 
@@ -57,21 +85,34 @@ export default function LoginScreen() {
               placeholder="Introduce tu contraseña"
               placeholderTextColor="#999"
               secureTextEntry
+              editable={!isLoading}
             />
           </View>
 
-          <TouchableOpacity onPress={handleLogin}>
+          <TouchableOpacity 
+            onPress={handleLogin} 
+            disabled={isLoading}
+            activeOpacity={0.7}
+          >
             <LinearGradient
               colors={['#A448FF', '#DA48FF']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.loginButton}
+              style={[styles.loginButton, isLoading && styles.disabledButton]}
             >
-              <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.registerLink} onPress={handleRegister}>
+          <TouchableOpacity 
+            style={styles.registerLink} 
+            onPress={handleRegister}
+            disabled={isLoading}
+          >
             <Text style={styles.registerText}>
               ¿No tienes cuenta? <Text style={styles.registerHighlight}>Regístrate</Text>
             </Text>
@@ -100,12 +141,6 @@ const styles = StyleSheet.create({
     width: 330,
     height: 80,
     marginBottom: 16,
-  },
-  logoText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#8B5CF6',
-    marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
@@ -169,5 +204,8 @@ const styles = StyleSheet.create({
   registerHighlight: {
     color: '#A448FF',
     fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });
