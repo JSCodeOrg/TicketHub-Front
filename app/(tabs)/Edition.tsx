@@ -10,6 +10,7 @@ interface FormData {
   apellido: string;
   email: string;
   documento: string;
+  password: string;
 }
 
 const Edition: React.FC = () => {
@@ -24,6 +25,7 @@ const Edition: React.FC = () => {
     apellido: '',
     email: '',
     documento: '',
+    password: '',
   });
 
   // Estado para notificaciones por email
@@ -47,6 +49,7 @@ const Edition: React.FC = () => {
             apellido: response.user.apellido || '',
             email: response.user.email || '',
             documento: response.user.documento ? response.user.documento.toString() : '',
+            password: response.user.password || '',
           });
           // Si tienes la información de notificaciones en la respuesta del usuario, puedes cargarla aquí
           // setEmailNotifications(response.user.emailNotifications || false);
@@ -90,6 +93,7 @@ const Edition: React.FC = () => {
           nombre: formData.nombre,
           apellido: formData.apellido,
           documento: documentoNumber,
+          password: formData.password,
           // Aquí puedes agregar las notificaciones si tu API lo soporta
           // emailNotifications: emailNotifications,
         },
@@ -121,7 +125,7 @@ const Edition: React.FC = () => {
   const handleChangePassword = (): void => {
     // agregar pa navegar a una pantalla de cambio de contraseña
     
-    console.log('Cambiar contraseña');
+    router.push('/Reseat-password');
   };
 
   if (isLoading) {

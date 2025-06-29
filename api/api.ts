@@ -108,7 +108,7 @@ export const updateUserProfile = async (
     token: string
 ) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/updateProfile`, {
+        const response = await fetch(`${API_BASE_URL}/auth/user/${userId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -154,4 +154,37 @@ export const getUserProfile = async (userId: number, token: string) => {
         console.error('Error en getUserProfile:', error);
         throw error;
     }
+};
+
+
+
+export const verifyCurrentPassword = async (
+  userId: number,
+  currentPassword: string,
+  token: string
+) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        userId,
+        currentPassword
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al verificar contraseña');
+    }
+
+    return data.isValid;
+  } catch (error) {
+    console.error('Error en verifyCurrentPassword:', error);
+    throw error;
+  }
 };
