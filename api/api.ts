@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+export const API_BASE_URL = 'http://localhost:3000/api';
 
 export const registerUser = async (userData: {
     email: string;
@@ -187,4 +187,65 @@ export const verifyCurrentPassword = async (
     console.error('Error en verifyCurrentPassword:', error);
     throw error;
   }
+};
+
+
+
+export const createEvent = async (eventData: {
+  nombre: string;
+  descripcion: string;
+  aforo: number;
+  fecha: string;
+  ticketTypes: Array<{
+    nombre: string;
+    precio: number;
+    cantidad_total: number;
+    cantidad_disponible: number;
+  }>;
+}, token: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/eventos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(eventData),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al crear el evento');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error en createEvent:', error);
+    throw error;
+  }
+};
+
+
+export const getEvents = async (token: string) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/eventos`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al obtener eventos');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error en getEvents:', error);
+        throw error;
+    }
 };

@@ -114,7 +114,7 @@ const Edition: React.FC = () => {
   };
 
   const handleCancel = (): void => {
-    router.back();
+    router.push('/Home-screen')
   };
 
   const handleLogout = (): void => {
