@@ -46,6 +46,10 @@ const Header = () => {
     router.push('/Edition-events')
   }
 
+  const handleEntradas = async () => {
+    router.push('/Mis-tickes')
+  }
+
   const { userEmail } = useAuth();
 
   return (
@@ -125,7 +129,7 @@ const Header = () => {
                 <Text style={styles.menuItemText}>Historial</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => console.log('Mis entradas')}>
+              <TouchableOpacity style={styles.menuItem} onPress={handleEntradas}>
                 <Ionicons name="ticket-outline" size={20} color="#A855F7" />
                 <Text style={styles.menuItemText}>Mis entradas</Text>
               </TouchableOpacity>

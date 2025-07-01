@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import TicketPurchaseModal from './TicketPurchaseModal'; // Ajusta la ruta según tu estructura
+import TicketPurchaseModal from './TicketPurchaseModal';
 
 
 
@@ -45,6 +45,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
   };
 
   const handlepago = () => {
+
     setIsPurchaseModalVisible(true);
   }
 
@@ -55,7 +56,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
   const handlePurchaseContinue = (quantity: number) => {
     console.log(`Comprando ${quantity} tickets`);
     setIsPurchaseModalVisible(false);
-    // Aquí puedes agregar la lógica para continuar con la compra
+  
   }
 
   // Datos de ejemplo para el lineup (puedes reemplazar con datos reales si los tienes)

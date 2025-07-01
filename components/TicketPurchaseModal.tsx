@@ -1,29 +1,40 @@
+import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
+import { purchaseTickets } from '../api/api';
+import { useAuth } from '../components/auth/AuthContext';
 
 interface TicketPurchaseModalProps {
   visible: boolean;
   onClose: () => void;
-  onContinue: (quantity: number) => void;
   eventTitle: string;
+  ticketTypeId: number;
+  ticketPrice?: number; // Hacer esta prop opcional
   maxTickets?: number;
+  onPurchaseSuccess?: () => void;
 }
 
 const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
   visible,
   onClose,
-  onContinue,
   eventTitle,
-  maxTickets = 10
+  ticketTypeId,
+  ticketPrice = 0, // Valor por defecto
+  maxTickets = 10,
+  onPurchaseSuccess,
 }) => {
   const [quantity, setQuantity] = useState(1);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { token, userEmail } = useAuth();
 
   const incrementQuantity = () => {
     if (quantity < maxTickets) {
@@ -37,9 +48,52 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
     }
   };
 
-  const handleContinue = () => {
-    onContinue(quantity);
+  // Función segura para calcular el precio total
+  const calculateTotalPrice = () => {
+    const price = ticketPrice || 0; // Asegurarse de que siempre sea un número
+    return (price * quantity).toFixed(2);
   };
+
+  const handleContinue = async () => {
+    if (!token) {
+      Alert.alert('Error', 'Debes iniciar sesión para comprar tickets');
+      return;
+    }
+
+    if (!userEmail) {
+      Alert.alert('Error', 'No se pudo obtener tu información de usuario');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Llamar al endpoint de compra
+      const paymentUrl = await purchaseTickets(ticketTypeId, quantity, token);
+      
+      // Abrir el navegador con la URL de pago de MercadoPago
+      const result = await WebBrowser.openBrowserAsync(paymentUrl);
+      
+      // Si llegamos aquí, el usuario ha completado o cancelado el pago
+      if (onPurchaseSuccess) {
+        onPurchaseSuccess();
+      }
+      
+      onClose(); // Cerrar el modal después de la compra
+    } catch (error: any) {
+      console.error('Error en la compra:', error);
+      let errorMessage = 'Ocurrió un error al procesar la compra. Por favor, intenta nuevamente.';
+      
+      if (error.message.includes('No hay suficientes tickets disponibles')) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const totalPrice = calculateTotalPrice();
 
   return (
     <Modal
@@ -54,7 +108,11 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.modalTitle}>Comprar Tickets</Text>
-              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={onClose}
+                disabled={isProcessing}
+              >
                 <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -71,23 +129,27 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
               
               <View style={styles.quantityContainer}>
                 <TouchableOpacity 
-                  style={[styles.quantityButton, quantity <= 1 && styles.quantityButtonDisabled]}
+                  style={[styles.quantityButton, (quantity <= 1 || isProcessing) && styles.quantityButtonDisabled]}
                   onPress={decrementQuantity}
-                  disabled={quantity <= 1}
+                  disabled={quantity <= 1 || isProcessing}
                 >
-                  <Text style={[styles.quantityButtonText, quantity <= 1 && styles.quantityButtonTextDisabled]}>-</Text>
+                  <Text style={[styles.quantityButtonText, (quantity <= 1 || isProcessing) && styles.quantityButtonTextDisabled]}>-</Text>
                 </TouchableOpacity>
                 
                 <View style={styles.quantityDisplay}>
-                  <Text style={styles.quantityText}>{quantity}</Text>
+                  {isProcessing ? (
+                    <ActivityIndicator size="small" color="#A448FF" />
+                  ) : (
+                    <Text style={styles.quantityText}>{quantity}</Text>
+                  )}
                 </View>
                 
                 <TouchableOpacity 
-                  style={[styles.quantityButton, quantity >= maxTickets && styles.quantityButtonDisabled]}
+                  style={[styles.quantityButton, (quantity >= maxTickets || isProcessing) && styles.quantityButtonDisabled]}
                   onPress={incrementQuantity}
-                  disabled={quantity >= maxTickets}
+                  disabled={quantity >= maxTickets || isProcessing}
                 >
-                  <Text style={[styles.quantityButtonText, quantity >= maxTickets && styles.quantityButtonTextDisabled]}>+</Text>
+                  <Text style={[styles.quantityButtonText, (quantity >= maxTickets || isProcessing) && styles.quantityButtonTextDisabled]}>+</Text>
                 </TouchableOpacity>
               </View>
 
@@ -97,19 +159,41 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
             {/* Summary */}
             <View style={styles.summarySection}>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Total de tickets:</Text>
-                <Text style={styles.summaryValue}>{quantity}</Text>
+                <Text style={styles.summaryLabel}>Tickets:</Text>
+                <Text style={styles.summaryValue}>{quantity} x ${ticketPrice?.toFixed(2) || '0.00'}</Text>
               </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Total:</Text>
+                <Text style={styles.summaryTotal}>${totalPrice}</Text>
+              </View>
+            </View>
+
+            {/* User Info */}
+            <View style={styles.userInfoSection}>
+              <Text style={styles.userInfoLabel}>Comprador:</Text>
+              <Text style={styles.userInfoText}>{userEmail}</Text>
             </View>
 
             {/* Action Buttons */}
             <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={onClose}
+                disabled={isProcessing}
+              >
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-                <Text style={styles.continueButtonText}>Continuar Compra</Text>
+              <TouchableOpacity 
+                style={[styles.continueButton, isProcessing && styles.continueButtonDisabled]}
+                onPress={handleContinue}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.continueButtonText}>Pagar ${totalPrice}</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -231,21 +315,41 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#333',
     paddingTop: 20,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   summaryLabel: {
     fontSize: 16,
     color: '#ccc',
   },
   summaryValue: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  summaryTotal: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#A448FF',
+  },
+  userInfoSection: {
+    marginBottom: 24,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  userInfoLabel: {
+    fontSize: 14,
+    color: '#999',
+    marginBottom: 4,
+  },
+  userInfoText: {
+    fontSize: 16,
+    color: '#fff',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -272,6 +376,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#9333EA',
     alignItems: 'center',
+  },
+  continueButtonDisabled: {
+    backgroundColor: '#7e22ce',
+    opacity: 0.7,
   },
   continueButtonText: {
     fontSize: 16,

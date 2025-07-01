@@ -25,6 +25,7 @@ function AppNavigation() {
           <Stack.Screen name="Reseat-password" />
           <Stack.Screen name="Create-event" />
           <Stack.Screen name="Edition-events" />
+          <Stack.Screen name="Mis-tickes" />
         </>
       ) : (
          <>

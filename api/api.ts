@@ -294,3 +294,56 @@ export const updateEvent = async (
 };
 
 
+
+
+
+
+
+export const getEventTickets = async (eventId: number) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tickets/${eventId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al obtener tickets del evento');
+    }
+
+    return data.tickets;
+  } catch (error) {
+    console.error('Error en getEventTickets:', error);
+    throw error;
+  }
+};
+
+export const purchaseTickets = async (ticketTypeId: number, quantity: number, token: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/comprar`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ 
+        ticketTypeId: ticketTypeId, 
+        cantidad: quantity 
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al realizar la compra');
+    }
+
+    return data.init_point; // URL de pago de MercadoPago
+  } catch (error) {
+    console.error('Error en purchaseTickets:', error);
+    throw error;
+  }
+};
