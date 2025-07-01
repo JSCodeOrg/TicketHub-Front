@@ -24,9 +24,12 @@ function AppNavigation() {
           <Stack.Screen name="Edition" />
           <Stack.Screen name="Reseat-password" />
           <Stack.Screen name="Create-event" />
+          <Stack.Screen name="Edition-events" />
         </>
       ) : (
+         <>
         <Stack.Screen name="(tabs)" />
+        </>
       )}
     </Stack>
   );

@@ -5,10 +5,11 @@ export const registerUser = async (userData: {
     password: string;
     nombre: string;
     apellido: string;
-    documento: string;
+    documento: number; // Cambiado a number
+    rol: number;
 }) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        const response = await fetch(`${API_BASE_URL}/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -28,6 +29,7 @@ export const registerUser = async (userData: {
         throw error;
     }
 };
+
 
 export const verifyUser = async (email: string, code: string) => {
   try {
@@ -249,3 +251,46 @@ export const getEvents = async (token: string) => {
         throw error;
     }
 };
+
+
+export const updateEvent = async (
+  eventId: number,
+  eventData: {
+    nombre: string;
+    descripcion: string;
+    aforo: number;
+    fecha: string;
+    ticketTypes: Array<{
+      id?: number;
+      nombre: string;
+      precio: number;
+      cantidad_total: number;
+      cantidad_disponible: number;
+    }>;
+  },
+  token: string
+) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/eventos/${eventId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(eventData),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al actualizar el evento');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error en updateEvent:', error);
+    throw error;
+  }
+};
+
+

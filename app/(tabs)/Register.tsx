@@ -10,30 +10,50 @@ export default function RegisterScreen() {
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [documento, setDocumento] = useState('');
+  const [quiereCrearEventos, setQuiereCrearEventos] = useState(null); // null, true, false
   const [isLoading, setIsLoading] = useState(false);
 
+  
+
   const handleRegister = async () => {
-    if (!email || !password || !nombre || !apellido || !documento) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
-      return;
+    if (!email || !password || !nombre || !apellido || !documento || quiereCrearEventos === null) {
+        Alert.alert('Error', 'Por favor completa todos los campos');
+        return;
+    }
+
+    // Validar que el documento sea numérico
+    const documentoNumber = Number(documento);
+    if (isNaN(documentoNumber)) {
+        Alert.alert('Error', 'El documento debe ser un número');
+        return;
     }
 
     setIsLoading(true);
     
     try {
-      await registerUser({ email, password, nombre, apellido, documento });
+        const rol = quiereCrearEventos ? 2 : 1;
+        
+        await registerUser({ 
+            email, 
+            password, 
+            nombre, 
+            apellido, 
+            documento: documentoNumber,
+            rol 
+        });
 
-      router.push({
-        pathname: '/verify-screen',
-        params: { email }
-      });
+        router.push({
+            pathname: '/verify-screen',
+            params: { email }
+        });
 
     } catch (error) {
-      Alert.alert('Error', error.message || 'Error al registrar usuario');
+        Alert.alert('Error', error.message || 'Error al registrar usuario');
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
-  };
+};
+
 
   const handleLogin = () => {
     router.push('/Login');
@@ -109,6 +129,41 @@ export default function RegisterScreen() {
                 placeholderTextColor="#999"
                 secureTextEntry
               />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>¿Quieres crear eventos?</Text>
+              <View style={styles.optionsContainer}>
+                <TouchableOpacity 
+                  style={[
+                    styles.optionButton, 
+                    quiereCrearEventos === true && styles.optionButtonSelected
+                  ]}
+                  onPress={() => setQuiereCrearEventos(true)}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    quiereCrearEventos === true && styles.optionTextSelected
+                  ]}>
+                    Sí
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.optionButton, 
+                    quiereCrearEventos === false && styles.optionButtonSelected
+                  ]}
+                  onPress={() => setQuiereCrearEventos(false)}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    quiereCrearEventos === false && styles.optionTextSelected
+                  ]}>
+                    No
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity 
@@ -187,6 +242,32 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: '#fff',
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  optionButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#D12CFF',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  optionButtonSelected: {
+    backgroundColor: '#D12CFF',
+    borderColor: '#D12CFF',
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  optionTextSelected: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   registerButton: {
     borderRadius: 8,

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
-    Modal,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Modal,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface TicketPurchaseModalProps {

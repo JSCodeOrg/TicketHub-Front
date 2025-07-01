@@ -51,8 +51,7 @@ const Edition: React.FC = () => {
             documento: response.user.documento ? response.user.documento.toString() : '',
             password: response.user.password || '',
           });
-          // Si tienes la información de notificaciones en la respuesta del usuario, puedes cargarla aquí
-          // setEmailNotifications(response.user.emailNotifications || false);
+
         } else {
           setError(response.message || 'Error al cargar los datos del usuario');
         }
@@ -94,8 +93,6 @@ const Edition: React.FC = () => {
           apellido: formData.apellido,
           documento: documentoNumber,
           password: formData.password,
-          // Aquí puedes agregar las notificaciones si tu API lo soporta
-          // emailNotifications: emailNotifications,
         },
         token
       );
@@ -231,7 +228,7 @@ const Edition: React.FC = () => {
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>⇠ Cerrar sesión</Text>
+          <Text style={styles.logoutText}>Eliminar Cuenta</Text>
         </TouchableOpacity>
 
         {/* Action Buttons */}

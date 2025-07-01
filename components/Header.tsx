@@ -41,8 +41,9 @@ const Header = () => {
     router.push('/Edition');
   }
 
-  const handleCreate = async () => {
-    router.push('/Create-event')
+
+  const handleGes = async () => {
+    router.push('/Edition-events')
   }
 
   const { userEmail } = useAuth();
@@ -129,9 +130,9 @@ const Header = () => {
                 <Text style={styles.menuItemText}>Mis entradas</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={handleCreate}>
+              <TouchableOpacity style={styles.menuItem} onPress={handleGes}>
                 <Ionicons name="ticket-outline" size={20} color="#A855F7" />
-                <Text style={styles.menuItemText}>Crear Evento</Text>
+                <Text style={styles.menuItemText}>Gestion de Evento</Text>
               </TouchableOpacity>
             </View>
 
