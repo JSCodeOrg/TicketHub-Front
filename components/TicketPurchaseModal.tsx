@@ -1,4 +1,3 @@
-import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,13 +11,18 @@ import {
 } from 'react-native';
 import { purchaseTickets } from '../api/api';
 import { useAuth } from '../components/auth/AuthContext';
+import PurchaseSuccessModal from './PurchaseSuccessModal';
 
 interface TicketPurchaseModalProps {
   visible: boolean;
   onClose: () => void;
   eventTitle: string;
-  ticketTypeId: number;
-  ticketPrice?: number; // Hacer esta prop opcional
+  ticketType: {
+    id: number;
+    nombre: string;
+    precio: number;
+    cantidad_disponible: number;
+  };
   maxTickets?: number;
   onPurchaseSuccess?: () => void;
 }
@@ -27,17 +31,18 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
   visible,
   onClose,
   eventTitle,
-  ticketTypeId,
-  ticketPrice = 0, // Valor por defecto
+  ticketType,
   maxTickets = 10,
   onPurchaseSuccess,
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const { token, userEmail } = useAuth();
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const actualMaxTickets = Math.min(maxTickets, ticketType.cantidad_disponible);
 
   const incrementQuantity = () => {
-    if (quantity < maxTickets) {
+    if (quantity < actualMaxTickets) {
       setQuantity(quantity + 1);
     }
   };
@@ -48,11 +53,12 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
     }
   };
 
-  // Función segura para calcular el precio total
   const calculateTotalPrice = () => {
-    const price = ticketPrice || 0; // Asegurarse de que siempre sea un número
-    return (price * quantity).toFixed(2);
+    return (ticketType.precio * quantity).toFixed(2);
   };
+
+  
+
 
   const handleContinue = async () => {
     if (!token) {
@@ -66,32 +72,33 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
     }
 
     setIsProcessing(true);
+    
     try {
-      // Llamar al endpoint de compra
-      const paymentUrl = await purchaseTickets(ticketTypeId, quantity, token);
+      const purchaseResult = await purchaseTickets(ticketType.id, quantity, token);
       
-      // Abrir el navegador con la URL de pago de MercadoPago
-      const result = await WebBrowser.openBrowserAsync(paymentUrl);
+      setPurchaseSuccess(true);
       
-      // Si llegamos aquí, el usuario ha completado o cancelado el pago
-      if (onPurchaseSuccess) {
-        onPurchaseSuccess();
-      }
-      
-      onClose(); // Cerrar el modal después de la compra
     } catch (error: any) {
       console.error('Error en la compra:', error);
+
       let errorMessage = 'Ocurrió un error al procesar la compra. Por favor, intenta nuevamente.';
       
       if (error.message.includes('No hay suficientes tickets disponibles')) {
         errorMessage = error.message;
+      } else if (error.message.includes('token')) {
+        errorMessage = 'Error de autenticación. Por favor, vuelve a iniciar sesión.';
+      } else if (error.message.includes('Tipo de ticket no encontrado')) {
+        errorMessage = 'El tipo de ticket seleccionado ya no está disponible.';
       }
       
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Error', errorMessage, [
+        { text: 'Entendido', style: 'cancel' }
+      ]);
+
     } finally {
       setIsProcessing(false);
     }
-  };
+};
 
   const totalPrice = calculateTotalPrice();
 
@@ -120,7 +127,7 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
             {/* Event Info */}
             <View style={styles.eventSection}>
               <Text style={styles.eventTitle}>{eventTitle}</Text>
-              <Text style={styles.eventSubtitle}>Selecciona la cantidad de tickets</Text>
+              <Text style={styles.eventSubtitle}>{ticketType.nombre}</Text>
             </View>
 
             {/* Quantity Selector */}
@@ -145,22 +152,24 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
                 </View>
                 
                 <TouchableOpacity 
-                  style={[styles.quantityButton, (quantity >= maxTickets || isProcessing) && styles.quantityButtonDisabled]}
+                  style={[styles.quantityButton, (quantity >= actualMaxTickets || isProcessing) && styles.quantityButtonDisabled]}
                   onPress={incrementQuantity}
-                  disabled={quantity >= maxTickets || isProcessing}
+                  disabled={quantity >= actualMaxTickets || isProcessing}
                 >
-                  <Text style={[styles.quantityButtonText, (quantity >= maxTickets || isProcessing) && styles.quantityButtonTextDisabled]}>+</Text>
+                  <Text style={[styles.quantityButtonText, (quantity >= actualMaxTickets || isProcessing) && styles.quantityButtonTextDisabled]}>+</Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.maxTicketsText}>Máximo {maxTickets} tickets por compra</Text>
+              <Text style={styles.maxTicketsText}>
+                Máximo {actualMaxTickets} tickets disponibles ({ticketType.cantidad_disponible} en total)
+              </Text>
             </View>
 
             {/* Summary */}
             <View style={styles.summarySection}>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Tickets:</Text>
-                <Text style={styles.summaryValue}>{quantity} x ${ticketPrice?.toFixed(2) || '0.00'}</Text>
+                <Text style={styles.summaryValue}>{quantity} x ${ticketType.precio.toFixed(2)}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Total:</Text>
@@ -199,6 +208,18 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
           </View>
         </SafeAreaView>
       </View>
+      <PurchaseSuccessModal
+        visible={purchaseSuccess}
+        onClose={() => {
+          setPurchaseSuccess(false);
+          onClose();
+          if (onPurchaseSuccess) {
+            onPurchaseSuccess();
+          }
+        }}
+        eventTitle={eventTitle}
+        quantity={quantity}
+      />
     </Modal>
   );
 };
@@ -255,8 +276,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   eventSubtitle: {
-    fontSize: 14,
-    color: '#ccc',
+    fontSize: 16,
+    color: '#A448FF',
+    fontWeight: '600',
   },
   quantitySection: {
     marginBottom: 32,

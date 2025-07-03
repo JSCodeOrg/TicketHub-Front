@@ -32,18 +32,15 @@ export default function LoginScreen() {
     try {
       const response = await loginUser({ email, password });
       
-      // Verifica si hay error en la respuesta
       if (response.error) {
         throw new Error(response.error);
       }
 
-      // Verifica que los datos necesarios estén presentes
       if (!response.token || !response.user || !response.user.id) {
         throw new Error('Datos de usuario incompletos en la respuesta');
       }
 
-      // Llama a login con todos los parámetros requeridos
-      await login(response.user.email, response.token, response.user.id);
+      await login(response.user.email, response.token, response.user.id, response.user.roles || []);
       router.replace('/Home-screen');
     } catch (error) {
       console.error('Login error:', error);

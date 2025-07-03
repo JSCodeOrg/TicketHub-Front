@@ -1,4 +1,3 @@
-// Header.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -19,6 +18,7 @@ const { width, height } = Dimensions.get('window');
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { logout, userEmail, hasRole } = useAuth(); 
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -27,7 +27,6 @@ const Header = () => {
   const closeMenu = () => {
     setIsMenuOpen(false);
   };
-  const { logout } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -39,18 +38,15 @@ const Header = () => {
 
   const handleEdition = async () => {
     router.push('/Edition');
-  }
-
+  };
 
   const handleGes = async () => {
-    router.push('/Edition-events')
-  }
+    router.push('/Edition-events');
+  };
 
   const handleEntradas = async () => {
-    router.push('/Mis-tickes')
-  }
-
-  const { userEmail } = useAuth();
+    router.push('/Mis-tickes');
+  };
 
   return (
     <>
@@ -134,10 +130,12 @@ const Header = () => {
                 <Text style={styles.menuItemText}>Mis entradas</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={handleGes}>
-                <Ionicons name="ticket-outline" size={20} color="#A855F7" />
-                <Text style={styles.menuItemText}>Gestion de Evento</Text>
-              </TouchableOpacity>
+              {hasRole(2) && (
+                <TouchableOpacity style={styles.menuItem} onPress={handleGes}>
+                  <Ionicons name="calendar-outline" size={20} color="#A855F7" />
+                  <Text style={styles.menuItemText}>Gestión de Evento</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Logout Button */}

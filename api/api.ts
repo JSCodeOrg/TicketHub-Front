@@ -297,8 +297,6 @@ export const updateEvent = async (
 
 
 
-
-
 export const getEventTickets = async (eventId: number) => {
   try {
     const response = await fetch(`${API_BASE_URL}/tickets/${eventId}`, {
@@ -341,7 +339,7 @@ export const purchaseTickets = async (ticketTypeId: number, quantity: number, to
       throw new Error(data.message || 'Error al realizar la compra');
     }
 
-    return data.init_point; // URL de pago de MercadoPago
+    return data; // Ahora devuelve los datos de la compra directamente
   } catch (error) {
     console.error('Error en purchaseTickets:', error);
     throw error;

@@ -1,12 +1,11 @@
-// Home-screen.tsx
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { getEvents } from '../../api/api';
 import EventCard from '../../components/EventCard';
@@ -23,6 +22,11 @@ interface Event {
         nombre: string;
         foto: string;
     };
+    ticketTypes: Array<{
+        nombre: string;
+        precio: string;
+        cantidad_disponible: number;
+    }>;
 }
 
 const Home = () => {
@@ -39,6 +43,7 @@ const Home = () => {
                 setLoading(true);
                 const response = await getEvents(token);
                 setEvents(response.events || []);
+
             } catch (err) {
                 setError(err.message || 'Error al cargar eventos');
                 console.error(err);
@@ -85,9 +90,10 @@ const Home = () => {
                                 titulo: event.nombre,
                                 imageUrl: event.banner,
                                 descripcion: event.descripcion,
-                                fecha: event.fecha,
+                                fecha: new Date(event.fecha),
                                 ubicacion: event.responsable?.nombre || 'Ubicación no disponible',
-                                aforo: event.aforo 
+                                aforo: event.aforo,
+                                ticketTypes: event.ticketTypes || []
                             }}
                         />
                     ))

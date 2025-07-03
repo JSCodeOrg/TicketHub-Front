@@ -13,8 +13,6 @@ import {
 } from 'react-native';
 import TicketPurchaseModal from './TicketPurchaseModal';
 
-
-
 const { width, height } = Dimensions.get('window');
 
 interface EventCardProps {
@@ -24,8 +22,13 @@ interface EventCardProps {
     descripcion: string;
     fecha: Date;
     ubicacion: string;
-    tickets: number;
     aforo: number;
+    ticketTypes: Array<{
+      id: number;
+      nombre: string;
+      precio: string;
+      cantidad_disponible: number;
+    }>;
   };
 }
 
@@ -34,7 +37,12 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
   const [isPurchaseModalVisible, setIsPurchaseModalVisible] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const ImageDefault = require("../assets/images/logo-tickethub.png");
-
+  const [selectedTicket, setSelectedTicket] = useState<{
+    id: number;
+    nombre: string;
+    precio: number;
+    cantidad_disponible: number;
+  } | null>(null);
 
   const openModal = () => {
     setIsModalVisible(true);
@@ -44,8 +52,13 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
     setIsModalVisible(false);
   };
 
-  const handlepago = () => {
-
+  const handlepago = (ticket: {
+    id: number;
+    nombre: string;
+    precio: number;
+    cantidad_disponible: number;
+  }) => {
+    setSelectedTicket(ticket);
     setIsPurchaseModalVisible(true);
   }
 
@@ -56,10 +69,14 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
   const handlePurchaseContinue = (quantity: number) => {
     console.log(`Comprando ${quantity} tickets`);
     setIsPurchaseModalVisible(false);
-  
   }
 
-  // Datos de ejemplo para el lineup (puedes reemplazar con datos reales si los tienes)
+  const getMinPrice = () => {
+    if (!event.ticketTypes || event.ticketTypes.length === 0) return 'N/A';
+    const minPrice = Math.min(...event.ticketTypes.map(t => parseFloat(t.precio)));
+    return minPrice.toFixed(2);
+  };
+
   const lineup = [
     { name: 'Artista Principal', featured: true },
     { name: 'DJ Invitado', featured: true },
@@ -67,7 +84,6 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
     { name: 'Apertura', featured: false },
   ];
 
-  // Formatear la fecha para mostrarla mejor
   const formattedDate = new Date(event.fecha).toLocaleDateString('es-ES', {
     day: 'numeric',
     month: 'long',
@@ -84,7 +100,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
           </View>
         )}
         <Image 
-          source={{ uri: ImageDefault }}
+          source={{ uri: event.imageUrl || ImageDefault }}
           style={styles.cardImage}
           onLoadStart={() => setImageLoading(true)}
           onLoadEnd={() => setImageLoading(false)}
@@ -95,7 +111,12 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
             <Text style={styles.cardDate}>{formattedDate}</Text>
             <Text style={styles.cardLocation} numberOfLines={1}>{event.ubicacion}</Text>
             <View style={styles.cardFooter}>
-              <Text style={styles.ticketsText}>{event.aforo} Aforo</Text>
+              <View>
+                <Text style={styles.ticketsText}>{event.aforo} Aforo</Text>
+                {event.ticketTypes.length > 0 && (
+                  <Text style={styles.ticketPrice}>Desde ${getMinPrice()}</Text>
+                )}
+              </View>
               <View style={styles.avatarGroup}>
                 <View style={[styles.avatar, { backgroundColor: '#FF6B6B' }]} />
                 <View style={[styles.avatar, { backgroundColor: '#4ECDC4', marginLeft: -8 }]} />
@@ -116,7 +137,6 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
       >
         <SafeAreaView style={styles.modalContainer}>
           <ScrollView style={styles.modalScrollView}>
-            {/* Header con imagen */}
             <View style={styles.modalHeader}>
               <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
                 <Text style={styles.closeButtonText}>✕</Text>
@@ -127,14 +147,13 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 </View>
               )}
               <Image 
-                source={{ uri: ImageDefault }}
+                source={{ uri: event.imageUrl || ImageDefault }}
                 style={styles.modalImage}
                 onLoadStart={() => setImageLoading(true)}
                 onLoadEnd={() => setImageLoading(false)}
               />
             </View>
 
-            {/* Contenido del modal */}
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>{event.titulo.toUpperCase()}</Text>
               
@@ -143,7 +162,6 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 <Text style={styles.eventDate}>Fecha: {formattedDate}</Text>
               </View>
 
-              {/* Descripción */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Descripción</Text>
                 <Text style={styles.description}>
@@ -151,7 +169,6 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 </Text>
               </View>
 
-              {/* Line Up */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>LINE UP</Text>
                 <View style={styles.lineupContainer}>
@@ -168,7 +185,23 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 </View>
               </View>
 
-              {/* Footer con tickets */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>ENTRADAS DISPONIBLES</Text>
+                {event.ticketTypes.map((ticket, index) => (
+                  <View key={index} style={styles.ticketItem}>
+                    <View style={styles.ticketInfoContainer}>
+                      <Text style={styles.ticketName}>{ticket.nombre}</Text>
+                      <Text style={styles.ticketAvailable}>
+                        {ticket.cantidad_disponible} disponibles
+                      </Text>
+                    </View>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Text style={styles.ticketPrice}>${ticket.precio}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
               <View style={styles.modalFooter}>
                 <View style={styles.ticketInfo}>
                   <Text style={styles.ticketCount}>{event.aforo} Aforo</Text>
@@ -178,34 +211,44 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                     <View style={[styles.avatar, { backgroundColor: '#45B7D1', marginLeft: -8 }]} />
                   </View>
                 </View>
-                
+                {/* Botón de comprar general al final como en el componente 2 */}
+                <TouchableOpacity 
+                  style={styles.saveButton}
+                  onPress={() => {
+                    // Si hay tickets disponibles, tomar el primero como ejemplo
+                    if (event.ticketTypes.length > 0) {
+                      const firstTicket = event.ticketTypes[0];
+                      handlepago({
+                        id: firstTicket.id,
+                        nombre: firstTicket.nombre,
+                        precio: parseFloat(firstTicket.precio),
+                        cantidad_disponible: firstTicket.cantidad_disponible
+                      });
+                    }
+                  }}
+                >
+                  <Text style={styles.saveButtonText}>Comprar Ticket</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity 
-                            style={[styles.saveButton]}
-                            onPress={handlepago}
-                          >
-                              <Text style={styles.saveButtonText}>Comprar Ticket</Text>
-
-                          </TouchableOpacity>
             </View>
           </ScrollView>
         </SafeAreaView>
       </Modal>
 
-      {/* Modal de compra de tickets */}
-      <TicketPurchaseModal
-        visible={isPurchaseModalVisible}
-        onClose={handlePurchaseClose}
-        onContinue={handlePurchaseContinue}
-        eventTitle={event.titulo}
-        maxTickets={10}
-      />
+      {selectedTicket && (
+        <TicketPurchaseModal
+          visible={isPurchaseModalVisible}
+          onClose={handlePurchaseClose}
+          eventTitle={event.titulo}
+          ticketType={selectedTicket}
+          maxTickets={10}
+        />
+      )}
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  // Estilos de la tarjeta compacta
   card: {
     width: '100%',
     height: 200,
@@ -253,6 +296,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  ticketPrice: {
+    fontSize: 14,
+    color: '#A448FF',
+    fontWeight: 'bold',
+    marginTop: 4,
+  },
+  buyButton: {
+    backgroundColor: '#9333EA',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginLeft: 10,
+  },
+  buyButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
   avatarGroup: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -275,8 +336,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.1)',
     zIndex: 1,
   },
-
-  // Estilos del modal
   modalContainer: {
     flex: 1,
     backgroundColor: '#1a1a1a',
@@ -374,11 +433,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 20,
   },
   ticketCount: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  ticketItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  ticketInfoContainer: {
+    flex: 1,
+  },
+  ticketName: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 4,
+  },
+  ticketAvailable: {
+    fontSize: 12,
+    color: '#9CA3AF',
   },
   saveButton: {
     backgroundColor: '#9333EA',
@@ -386,7 +466,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 20,
   },
   saveButtonText: {
     fontSize: 16,
