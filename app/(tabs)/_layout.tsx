@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from '../../components/auth/AuthContext';
 
-// Componente separado para la navegación
+
 function AppNavigation() {
   const { userEmail, isLoading } = useAuth();
 
@@ -26,6 +26,7 @@ function AppNavigation() {
           <Stack.Screen name="Create-event" />
           <Stack.Screen name="Edition-events" />
           <Stack.Screen name="Mis-tickes" />
+          <Stack.Screen name="EventTicketsScreen/[id]" />
         </>
       ) : (
          <>
@@ -36,7 +37,7 @@ function AppNavigation() {
   );
 }
 
-// Componente principal que provee el contexto
+
 export default function RootLayout() {
   return (
     <AuthProvider>

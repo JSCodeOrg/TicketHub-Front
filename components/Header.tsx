@@ -28,6 +28,8 @@ const Header = () => {
     setIsMenuOpen(false);
   };
 
+
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -47,6 +49,10 @@ const Header = () => {
   const handleEntradas = async () => {
     router.push('/Mis-tickes');
   };
+
+  const handleHome = async () => {
+    router.push('/Home-screen');
+  }
 
   return (
     <>
@@ -110,7 +116,7 @@ const Header = () => {
 
             {/* Menu Items */}
             <View style={styles.menuItems}>
-              <TouchableOpacity style={styles.menuItem} onPress={() => console.log('Menú principal')}>
+              <TouchableOpacity style={styles.menuItem} onPress={handleHome}>
                 <Ionicons name="home-outline" size={20} color="#A855F7" />
                 <Text style={styles.menuItemText}>Menú principal</Text>
               </TouchableOpacity>

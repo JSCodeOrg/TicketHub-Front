@@ -5,7 +5,7 @@ export const registerUser = async (userData: {
     password: string;
     nombre: string;
     apellido: string;
-    documento: number; // Cambiado a number
+    documento: number; 
     rol: number;
 }) => {
     try {
@@ -294,9 +294,6 @@ export const updateEvent = async (
 };
 
 
-
-
-
 export const getEventTickets = async (eventId: number) => {
   try {
     const response = await fetch(`${API_BASE_URL}/tickets/${eventId}`, {
@@ -339,9 +336,66 @@ export const purchaseTickets = async (ticketTypeId: number, quantity: number, to
       throw new Error(data.message || 'Error al realizar la compra');
     }
 
-    return data; // Ahora devuelve los datos de la compra directamente
+    return data; 
   } catch (error) {
     console.error('Error en purchaseTickets:', error);
     throw error;
   }
+};
+
+
+
+
+export const getUserEventsWithTickets = async (token: string) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/eventos-con-tickets`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al obtener eventos con tickets');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error en getUserEventsWithTickets:', error);
+        throw error;
+    }
+};
+
+
+export const getUserTicketsForEvent = async (token: string, eventoId: number) => {
+    try {
+       
+        const response = await fetch(`${API_BASE_URL}/tickets/evento/${eventoId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        console.log("Respuesta del servidor:", response);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Error del servidor:", errorData);
+            throw new Error(errorData.message || 'Error al obtener tickets');
+        }
+
+        const data = await response.json();
+        console.log("Datos recibidos:", data);
+
+        return Array.isArray(data) ? data : data.tickets || data;
+        
+    } catch (error) {
+        console.error('Error en getUserTicketsForEvent:', error);
+        throw error;
+    }
 };

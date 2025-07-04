@@ -1,101 +1,143 @@
-// Mis-tickes.tsx
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
-import { API_BASE_URL } from '../../api/api';
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getUserEventsWithTickets } from '../../api/api';
 import { useAuth } from '../../components/auth/AuthContext';
 
-interface Ticket {
-  id: number;
-  qrPath: string;
-  estado: string;
-  tipoTicket: {
-    nombre: string;
-    evento: {
-      nombre: string;
-      fecha: string;
-    };
-  };
-}
-
-const MisTicketsScreen = () => {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+const MisTickets = ({ navigation }: { navigation: any }) => {
+  const { token } = useAuth();
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { userId, token } = useAuth();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchTickets = async () => {
-      if (!userId || !token) return;
-      
+    const fetchUserEvents = async () => {
+      if (!token) {
+        setError('No hay token de autenticación');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/tickets/user/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-          setTickets(data.tickets);
-        } else {
-          console.error('Error al obtener tickets:', data.message);
-        }
-      } catch (error) {
-        console.error('Error:', error);
+        const userEvents = await getUserEventsWithTickets(token);
+        setEvents(userEvents);
+        setError(null);
+      } catch (err) {
+        console.error('Error al obtener eventos:', err);
+        setError('Error al cargar tus tickets. Intenta nuevamente.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTickets();
-  }, [userId, token]);
+    fetchUserEvents();
+  }, [token]);
+
+  const goBack = () => {
+    router.push('/Home-screen');
+  };
+
+  const renderEventItem = ({ item }: { item: any }) => (
+    <TouchableOpacity 
+        style={styles.eventCard}
+        onPress={() => {
+    router.push({
+      pathname: "/EventTicketsScreen",
+      params: { id: item.id.toString() } 
+    });
+}}
+    >
+        {item.banner && (
+            <Image 
+                source={{ uri: item.banner }} 
+                style={styles.eventImage}
+                resizeMode="cover"
+            />
+        )}
+        <View style={styles.eventInfo}>
+            <Text style={styles.eventName}>{item.nombre}</Text>
+            <Text style={styles.eventDate}>
+                {format(new Date(item.fecha), "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
+            </Text>
+            <Text style={styles.eventDescription} numberOfLines={2}>
+                {item.descripcion}
+            </Text>
+            <View style={styles.ticketsInfo}>
+                <Text style={styles.ticketsCount}>
+                    {item.cantidadTickets} {item.cantidadTickets === 1 ? 'boleto' : 'boletos'}
+                </Text>
+                <Text style={styles.ticketTypes}>
+                    Tipos: {item.tiposTickets.join(', ')}
+                </Text>
+            </View>
+        </View>
+    </TouchableOpacity>
+);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#A448FF" />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Mis Entradas</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A448FF" />
+          <Text style={styles.loadingText}>Cargando tus tickets...</Text>
+        </View>
       </View>
     );
   }
 
-  if (tickets.length === 0) {
+  if (error) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No tienes tickets comprados</Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Mis Entradas</Text>
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Mis Entradas</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No tienes tickets comprados aún</Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Mis Tickets</Text>
-      
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={goBack}>
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Mis Entradas</Text>
+      </View>
       <FlatList
-        data={tickets}
+        data={events}
+        renderItem={renderEventItem}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.ticketCard}>
-            <Text style={styles.eventName}>{item.tipoTicket.evento.nombre}</Text>
-            <Text style={styles.ticketType}>{item.tipoTicket.nombre}</Text>
-            <Text style={styles.eventDate}>{new Date(item.tipoTicket.evento.fecha).toLocaleDateString()}</Text>
-            
-            {item.qrPath && (
-              <Image 
-                source={{ uri: `${API_BASE_URL}/tickets/qr/${item.qrPath}` }} 
-                style={styles.qrImage}
-                resizeMode="contain"
-              />
-            )}
-            
-            <View style={[
-              styles.statusBadge,
-              item.estado === 'ACTIVO' ? styles.activeBadge : styles.inactiveBadge
-            ]}>
-              <Text style={styles.statusText}>{item.estado}</Text>
-            </View>
-          </View>
-        )}
         contentContainerStyle={styles.listContent}
       />
     </View>
@@ -105,78 +147,123 @@ const MisTicketsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
-    padding: 16,
+    backgroundColor: '#1a1a1a',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(164, 72, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  backButtonText: {
+    fontSize: 20,
+    color: '#A448FF',
+    fontWeight: 'bold',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#A448FF',
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#121212',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    marginTop: 10,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    textAlign: 'center',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#121212',
   },
   emptyText: {
-    color: '#fff',
     fontSize: 18,
-  },
-  title: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#ccc',
   },
   listContent: {
-    paddingBottom: 20,
-  },
-  ticketCard: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 12,
     padding: 16,
+  },
+  eventCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
     marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  eventImage: {
+    width: '100%',
+    height: 150,
+  },
+  eventInfo: {
+    padding: 16,
   },
   eventName: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  ticketType: {
-    color: '#A448FF',
-    fontSize: 16,
     marginBottom: 4,
+    color: '#A448FF',
   },
   eventDate: {
-    color: '#ccc',
     fontSize: 14,
-    marginBottom: 12,
-  },
-  qrImage: {
-    width: '100%',
-    height: 200,
-    marginBottom: 12,
-    alignSelf: 'center',
-  },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  activeBadge: {
-    backgroundColor: 'rgba(0, 200, 0, 0.2)',
-  },
-  inactiveBadge: {
-    backgroundColor: 'rgba(200, 0, 0, 0.2)',
-  },
-  statusText: {
     color: '#fff',
-    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'capitalize',
+  },
+  eventDescription: {
+    fontSize: 14,
+    color: '#ccc',
+    marginBottom: 10,
+    lineHeight: 20,
+  },
+  ticketsInfo: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  ticketsCount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  ticketTypes: {
+    fontSize: 14,
+    color: '#A448FF',
+    marginTop: 4,
+    fontWeight: '500',
   },
 });
 
-export default MisTicketsScreen;
+export default MisTickets;
